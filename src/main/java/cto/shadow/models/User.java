@@ -2,7 +2,23 @@ package cto.shadow.models;
 
 import java.util.Set;
 
-public record User(long id, long createdAt, long modifiedAt, long deletedAt, long dateOfBirth, String firstName, String lastName, String email, String phone, String username, String password, String createdBy, String modifiedBy, String deletedBy, Set<Role> authorities) {
+public record User(
+        long id,
+        long createdAt,
+        long modifiedAt,
+        long deletedAt,
+        long dateOfBirth,
+        String firstName,
+        String lastName,
+        String email,
+        String phone,
+        String username,
+        String password,
+        String createdBy,
+        String modifiedBy,
+        String deletedBy,
+        Set<Role> authorities
+) {
     public User {
         if (id < 0) {
             throw new IllegalArgumentException("ID must be a positive number");
