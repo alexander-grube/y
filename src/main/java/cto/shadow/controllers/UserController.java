@@ -19,6 +19,7 @@ public class UserController {
             try (Connection connection = Database.dataSource.getConnection()) {
                 UserRegister userRegister = JSON.parseObject(bytes, UserRegister.class);
                 String hashedPassword = BCrypt.withDefaults().hashToString(Config.BCRYPT_COST, userRegister.password().toCharArray());
+                long id;
                 try (PreparedStatement statement = connection.prepareStatement(
                         """
                                 INSERT INTO users (date_of_birth, first_name, last_name, email, phone, username, password, created_by, modified_by
@@ -41,9 +42,32 @@ public class UserController {
                         exchange.getResponseSender().send("Failed to register user");
                         return;
                     }
-                    exchange.setStatusCode(200);
-                    exchange.getResponseSender().send("User with ID " + resultSet.getInt(1) + " registered successfully");
+                    id = resultSet.getLong(1);
                 }
+                long userRoleId;
+                try (PreparedStatement statement = connection.prepareStatement(
+                        """
+                                SELECT id FROM roles WHERE authority = 'USER'
+                                """)) {
+                    var resultSet = statement.executeQuery();
+                    if (!resultSet.next()) {
+                        LOGGER.error("Failed to get user role");
+                        exchange.setStatusCode(500);
+                        exchange.getResponseSender().send("Failed to get user role");
+                        return;
+                    }
+                    userRoleId = resultSet.getLong(1);
+                }
+                try (PreparedStatement statement = connection.prepareStatement(
+                        """
+                                INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)
+                                """)) {
+                    statement.setLong(1, id);
+                    statement.setLong(2, userRoleId);
+                    statement.executeUpdate();
+                }
+                exchange.setStatusCode(200);
+                exchange.getResponseSender().send("User with ID " + id + " registered successfully");
             } catch (Exception e) {
                 LOGGER.error("Error registering user", e);
                 exchange.setStatusCode(500);
