@@ -15,4 +15,6 @@ public class Config {
     public static final int PORT = Integer.parseInt(dotenv.get("PORT"));
 
     public static final String HOST = dotenv.get("HOST");
+
+    public static final int BCRYPT_COST = 12;
 }

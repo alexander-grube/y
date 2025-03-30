@@ -20,6 +20,7 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.5")
     implementation("com.zaxxer:HikariCP:6.3.0")
     implementation("io.github.cdimascio:dotenv-java:3.2.0")
+    implementation("at.favre.lib:bcrypt:0.10.2")
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }

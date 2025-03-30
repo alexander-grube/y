@@ -1,7 +1,7 @@
 CREATE TABLE public.roles
 (
     id BIGSERIAL NOT NULL PRIMARY KEY,
-    authority VARCHAR(255) NOT NULL
+    authority VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE public.users
