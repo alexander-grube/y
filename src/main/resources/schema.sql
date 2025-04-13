@@ -7,19 +7,29 @@ CREATE TABLE public.roles
 CREATE TABLE public.users
 (
     id BIGSERIAL NOT NULL PRIMARY KEY,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP,
-    date_of_birth TIMESTAMP NOT NULL,
+    failed_login_attempts INT DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMPTZ,
+    last_login_at TIMESTAMPTZ,
+    lock_until TIMESTAMPTZ,
+    date_of_birth DATE NOT NULL,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    phone VARCHAR(255),
-    username VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL
+        CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$'),
+    phone VARCHAR(20),
+    username VARCHAR(50) NOT NULL
+        CHECK (LENGTH(username) >= 3),
     password VARCHAR(255) NOT NULL,
     created_by VARCHAR(255) NOT NULL,
     modified_by VARCHAR(255) NOT NULL,
-    deleted_by VARCHAR(255)
+    deleted_by VARCHAR(255),
+
+    CONSTRAINT deletion_check CHECK (
+            (deleted_at IS NULL AND deleted_by IS NULL) OR
+            (deleted_at IS NOT NULL AND deleted_by IS NOT NULL)
+    )
 );
 
 CREATE UNIQUE INDEX idx_users_email ON public.users (email)

@@ -1,14 +1,18 @@
 package cto.shadow.models;
 
-import java.sql.Date;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.Set;
 
 public record User(
         long id,
-        long createdAt,
-        long modifiedAt,
-        long deletedAt,
-        Date dateOfBirth,
+        int failedLoginAttempts,
+        OffsetDateTime createdAt,
+        OffsetDateTime modifiedAt,
+        OffsetDateTime deletedAt,
+        OffsetDateTime lastLoginAt,
+        OffsetDateTime lockUntil,
+        LocalDate dateOfBirth,
         String firstName,
         String lastName,
         String email,

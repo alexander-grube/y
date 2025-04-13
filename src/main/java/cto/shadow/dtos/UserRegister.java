@@ -2,11 +2,11 @@ package cto.shadow.dtos;
 
 import com.alibaba.fastjson2.annotation.JSONCompiled;
 
-import java.sql.Date;
+import java.time.LocalDate;
 
 @JSONCompiled
 public record UserRegister(
-        Date dateOfBirth,
+        LocalDate dateOfBirth,
         String firstName,
         String lastName,
         String email,

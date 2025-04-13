@@ -4,12 +4,14 @@ import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.alibaba.fastjson2.JSON;
 import cto.shadow.config.Config;
 import cto.shadow.database.Database;
+import cto.shadow.dtos.UpdatePhoneNumberRequest;
 import cto.shadow.dtos.UserRegister;
 import io.undertow.server.HttpServerExchange;
 import org.jboss.logging.Logger;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
+import java.sql.*;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 public class UserController {
     private static final Logger LOGGER = Logger.getLogger(UserController.class);
@@ -26,7 +28,7 @@ public class UserController {
                                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                                 RETURNING id
                                 """)) {
-                    statement.setDate(1, userRegister.dateOfBirth());
+                    statement.setObject(1, userRegister.dateOfBirth());
                     statement.setString(2, userRegister.firstName());
                     statement.setString(3, userRegister.lastName());
                     statement.setString(4, userRegister.email());
@@ -74,5 +76,44 @@ public class UserController {
                 exchange.getResponseSender().send("Internal server error");
             }
         }));
+    }
+
+    public static void updatePhoneNumber(HttpServerExchange exchange) {
+        final long id = Long.parseLong(exchange.getQueryParameters().get("id").getFirst());
+        exchange.getRequestReceiver().receiveFullBytes((request, bytes) -> {
+            try (Connection connection = Database.dataSource.getConnection()) {
+                UpdatePhoneNumberRequest updatePhoneNumberRequest;
+                try {
+                    updatePhoneNumberRequest = JSON.parseObject(bytes, UpdatePhoneNumberRequest.class);
+                } catch (Exception e) {
+                    LOGGER.error("Error parsing request body", e);
+                    exchange.setStatusCode(400);
+                    exchange.getResponseSender().send("Invalid request body " + e.getMessage());
+                    return;
+                }
+                try (PreparedStatement statement = connection.prepareStatement(
+                        """
+                                UPDATE users SET phone = ?, modified_at = ?, modified_by = ? WHERE id = ?
+                                """)) {
+                    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+                    statement.setString(1, updatePhoneNumberRequest.phone());
+                    statement.setObject(2, now);
+                    statement.setString(3, "system");
+                    statement.setLong(4, id);
+                    int rowsUpdated = statement.executeUpdate();
+                    if (rowsUpdated == 0) {
+                        exchange.setStatusCode(404);
+                        exchange.getResponseSender().send("User not found");
+                        return;
+                    }
+                }
+                exchange.setStatusCode(200);
+                exchange.getResponseSender().send("Phone number updated successfully");
+            } catch (Exception e) {
+                LOGGER.error("Error updating phone number", e);
+                exchange.setStatusCode(500);
+                exchange.getResponseSender().send("Internal server error " + e.getMessage());
+            }
+        });
     }
 }

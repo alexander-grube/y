@@ -19,5 +19,6 @@ public class Server {
     private static final HttpHandler ROUTES = new RoutingHandler()
             .get(Routes.HEALTH_CHECK, HealthController::checkHealth)
             .post(Routes.ECHO, EchoController::echo)
-            .post(Routes.USER_REGISTER, UserController::registerUser);
+            .post(Routes.USER_REGISTER, UserController::registerUser)
+            .put(Routes.USER_UPDATE_PHONE_NUMBER, UserController::updatePhoneNumber);
 }
