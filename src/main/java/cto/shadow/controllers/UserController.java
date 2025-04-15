@@ -112,7 +112,7 @@ public class UserController {
             } catch (Exception e) {
                 LOGGER.error("Error updating phone number", e);
                 exchange.setStatusCode(500);
-                exchange.getResponseSender().send("Internal server error " + e.getMessage());
+                exchange.getResponseSender().send("Internal server error");
             }
         });
     }
