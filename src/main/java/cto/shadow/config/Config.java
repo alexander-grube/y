@@ -17,4 +17,10 @@ public class Config {
     public static final String HOST = dotenv.get("HOST");
 
     public static final int BCRYPT_COST = 12;
+
+    public static final String JWT_SECRET = dotenv.get("JWT_SECRET");
+
+    public static final long JWT_EXPIRATION_MILLIS = Long.parseLong(dotenv.get("JWT_EXPIRATION_MILLIS"));
+
+    public static final String JWT_ISSUER = dotenv.get("JWT_ISSUER");
 }

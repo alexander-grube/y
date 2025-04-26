@@ -6,6 +6,7 @@ import cto.shadow.config.Config;
 import cto.shadow.database.Database;
 import cto.shadow.dtos.UpdatePhoneNumberRequest;
 import cto.shadow.dtos.UserRegister;
+import cto.shadow.utils.JwtTokenGenerator;
 import io.undertow.server.HttpServerExchange;
 import org.jboss.logging.Logger;
 
@@ -68,8 +69,9 @@ public class UserController {
                     statement.setLong(2, userRoleId);
                     statement.executeUpdate();
                 }
+                final String jwt = JwtTokenGenerator.generateToken(id);
                 exchange.setStatusCode(200);
-                exchange.getResponseSender().send("User with ID " + id + " registered successfully");
+                exchange.getResponseSender().send(jwt);
             } catch (Exception e) {
                 LOGGER.error("Error registering user", e);
                 exchange.setStatusCode(500);
