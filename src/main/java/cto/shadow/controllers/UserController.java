@@ -20,7 +20,11 @@ public class UserController {
 
     public static void registerUser(HttpServerExchange exchange) {
         exchange.getRequestReceiver().receiveFullBytes(((request, bytes) -> {
-            try (Connection connection = Database.dataSource.getConnection()) {
+            Connection connection = null;
+            try {
+                connection = Database.dataSource.getConnection();
+                connection.setAutoCommit(false); // Start transaction
+
                 UserRegister userRegister = JSON.parseObject(bytes, UserRegister.class);
                 String hashedPassword = BCrypt.withDefaults().hashToString(Config.BCRYPT_COST, userRegister.password().toCharArray());
                 long id;
@@ -44,6 +48,7 @@ public class UserController {
                         LOGGER.error("Failed to register user");
                         exchange.setStatusCode(500);
                         exchange.getResponseSender().send("Failed to register user");
+                        connection.rollback();
                         return;
                     }
                     id = resultSet.getLong(1);
@@ -58,6 +63,7 @@ public class UserController {
                         LOGGER.error("Failed to get user role");
                         exchange.setStatusCode(500);
                         exchange.getResponseSender().send("Failed to get user role");
+                        connection.rollback();
                         return;
                     }
                     userRoleId = resultSet.getLong(1);
@@ -70,20 +76,42 @@ public class UserController {
                     statement.setLong(2, userRoleId);
                     statement.executeUpdate();
                 }
-                final String jwt = JwtTokenGenerator.generateToken(id);
+
+                connection.commit(); // Commit transaction if all operations succeed
+
                 exchange.setStatusCode(200);
-                exchange.getResponseSender().send(jwt);
+                exchange.getResponseSender().send("User registered successfully");
             } catch (Exception e) {
                 LOGGER.error("Error registering user", e);
+                if (connection != null) {
+                    try {
+                        connection.rollback(); // Rollback transaction on error
+                    } catch (SQLException rollbackEx) {
+                        LOGGER.error("Error rolling back transaction", rollbackEx);
+                    }
+                }
                 exchange.setStatusCode(500);
                 exchange.getResponseSender().send("Internal server error");
+            } finally {
+                if (connection != null) {
+                    try {
+                        connection.setAutoCommit(true); // Reset auto-commit mode
+                        connection.close();
+                    } catch (SQLException closeEx) {
+                        LOGGER.error("Error closing connection", closeEx);
+                    }
+                }
             }
         }));
     }
 
     public static void loginUser(HttpServerExchange exchange) {
         exchange.getRequestReceiver().receiveFullBytes(((request, bytes) -> {
-            try (Connection connection = Database.dataSource.getConnection()) {
+            Connection connection = null;
+            try {
+                connection = Database.dataSource.getConnection();
+                connection.setAutoCommit(false); // Start transaction
+
                 UserLogin userLogin = JSON.parseObject(bytes, UserLogin.class);
                 final String username = userLogin.username();
                 final String password = userLogin.password();
@@ -99,6 +127,7 @@ public class UserController {
                         LOGGER.error("Invalid username or password");
                         exchange.setStatusCode(401);
                         exchange.getResponseSender().send("Invalid username or password");
+                        connection.rollback(); // Rollback transaction
                         return;
                     }
                     id = resultSet.getLong(1);
@@ -113,6 +142,7 @@ public class UserController {
                         statement.setLong(1, id);
                         statement.executeUpdate();
                     }
+                    connection.commit(); // Commit the failed login attempt update
                     exchange.setStatusCode(401);
                     exchange.getResponseSender().send("Invalid username or password");
                     return;
@@ -133,12 +163,31 @@ public class UserController {
                     statement.setLong(2, id);
                     statement.executeUpdate();
                 }
+
+                connection.commit(); // Commit transaction if all operations succeed
+
                 exchange.setStatusCode(200);
                 exchange.getResponseSender().send(jwt);
             } catch (Exception e) {
                 LOGGER.error("Error logging in user", e);
+                if (connection != null) {
+                    try {
+                        connection.rollback(); // Rollback transaction on error
+                    } catch (SQLException rollbackEx) {
+                        LOGGER.error("Error rolling back transaction", rollbackEx);
+                    }
+                }
                 exchange.setStatusCode(500);
                 exchange.getResponseSender().send("Internal server error");
+            } finally {
+                if (connection != null) {
+                    try {
+                        connection.setAutoCommit(true); // Reset auto-commit mode
+                        connection.close();
+                    } catch (SQLException closeEx) {
+                        LOGGER.error("Error closing connection", closeEx);
+                    }
+                }
             }
         }));
     }
@@ -146,7 +195,11 @@ public class UserController {
     public static void updatePhoneNumber(HttpServerExchange exchange) {
         final long id = Long.parseLong(exchange.getQueryParameters().get("id").getFirst());
         exchange.getRequestReceiver().receiveFullBytes((request, bytes) -> {
-            try (Connection connection = Database.dataSource.getConnection()) {
+            Connection connection = null;
+            try {
+                connection = Database.dataSource.getConnection();
+                connection.setAutoCommit(false); // Start transaction
+
                 UpdatePhoneNumberRequest updatePhoneNumberRequest;
                 try {
                     updatePhoneNumberRequest = JSON.parseObject(bytes, UpdatePhoneNumberRequest.class);
@@ -154,8 +207,10 @@ public class UserController {
                     LOGGER.error("Error parsing request body", e);
                     exchange.setStatusCode(400);
                     exchange.getResponseSender().send("Invalid request body " + e.getMessage());
+                    connection.rollback(); // Rollback transaction
                     return;
                 }
+
                 try (PreparedStatement statement = connection.prepareStatement(
                         """
                                 UPDATE users SET phone = ?, modified_at = ?, modified_by = ? WHERE id = ?
@@ -169,15 +224,35 @@ public class UserController {
                     if (rowsUpdated == 0) {
                         exchange.setStatusCode(404);
                         exchange.getResponseSender().send("User not found");
+                        connection.rollback(); // Rollback transaction
                         return;
                     }
                 }
+
+                connection.commit(); // Commit transaction if all operations succeed
+
                 exchange.setStatusCode(200);
                 exchange.getResponseSender().send("Phone number updated successfully");
             } catch (Exception e) {
                 LOGGER.error("Error updating phone number", e);
+                if (connection != null) {
+                    try {
+                        connection.rollback(); // Rollback transaction on error
+                    } catch (SQLException rollbackEx) {
+                        LOGGER.error("Error rolling back transaction", rollbackEx);
+                    }
+                }
                 exchange.setStatusCode(500);
                 exchange.getResponseSender().send("Internal server error");
+            } finally {
+                if (connection != null) {
+                    try {
+                        connection.setAutoCommit(true); // Reset auto-commit mode
+                        connection.close();
+                    } catch (SQLException closeEx) {
+                        LOGGER.error("Error closing connection", closeEx);
+                    }
+                }
             }
         });
     }
