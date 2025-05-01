@@ -5,6 +5,7 @@ import com.alibaba.fastjson2.JSON;
 import cto.shadow.config.Config;
 import cto.shadow.database.Database;
 import cto.shadow.dtos.UpdatePhoneNumberRequest;
+import cto.shadow.dtos.UserLogin;
 import cto.shadow.dtos.UserRegister;
 import cto.shadow.utils.JwtTokenGenerator;
 import io.undertow.server.HttpServerExchange;
@@ -74,6 +75,68 @@ public class UserController {
                 exchange.getResponseSender().send(jwt);
             } catch (Exception e) {
                 LOGGER.error("Error registering user", e);
+                exchange.setStatusCode(500);
+                exchange.getResponseSender().send("Internal server error");
+            }
+        }));
+    }
+
+    public static void loginUser(HttpServerExchange exchange) {
+        exchange.getRequestReceiver().receiveFullBytes(((request, bytes) -> {
+            try (Connection connection = Database.dataSource.getConnection()) {
+                UserLogin userLogin = JSON.parseObject(bytes, UserLogin.class);
+                final String username = userLogin.username();
+                final String password = userLogin.password();
+                long id;
+                String hashedPassword;
+                try (PreparedStatement statement = connection.prepareStatement(
+                        """
+                                SELECT id, password FROM users WHERE username = ?
+                                """)) {
+                    statement.setString(1, username);
+                    var resultSet = statement.executeQuery();
+                    if (!resultSet.next()) {
+                        LOGGER.error("Invalid username or password");
+                        exchange.setStatusCode(401);
+                        exchange.getResponseSender().send("Invalid username or password");
+                        return;
+                    }
+                    id = resultSet.getLong(1);
+                    hashedPassword = resultSet.getString(2);
+                }
+                if (!BCrypt.verifyer().verify(password.toCharArray(), hashedPassword).verified) {
+                    LOGGER.error("Invalid username or password");
+                    try (PreparedStatement statement = connection.prepareStatement(
+                            """
+                                    UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE id = ?
+                                    """)) {
+                        statement.setLong(1, id);
+                        statement.executeUpdate();
+                    }
+                    exchange.setStatusCode(401);
+                    exchange.getResponseSender().send("Invalid username or password");
+                    return;
+                }
+                final String jwt = JwtTokenGenerator.generateToken(id);
+                try (PreparedStatement statement = connection.prepareStatement(
+                        """
+                                UPDATE users SET failed_login_attempts = 0 WHERE id = ?
+                                """)) {
+                    statement.setLong(1, id);
+                    statement.executeUpdate();
+                }
+                try (PreparedStatement statement = connection.prepareStatement(
+                        """
+                                UPDATE users SET last_login_at = ? WHERE id = ?
+                                """)) {
+                    statement.setObject(1, OffsetDateTime.now(ZoneOffset.UTC));
+                    statement.setLong(2, id);
+                    statement.executeUpdate();
+                }
+                exchange.setStatusCode(200);
+                exchange.getResponseSender().send(jwt);
+            } catch (Exception e) {
+                LOGGER.error("Error logging in user", e);
                 exchange.setStatusCode(500);
                 exchange.getResponseSender().send("Internal server error");
             }

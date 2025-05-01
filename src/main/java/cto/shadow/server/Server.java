@@ -20,5 +20,6 @@ public class Server {
             .get(Routes.HEALTH_CHECK, HealthController::checkHealth)
             .post(Routes.ECHO, EchoController::echo)
             .post(Routes.USER_REGISTER, UserController::registerUser)
+            .post(Routes.USER_LOGIN, UserController::loginUser)
             .put(Routes.USER_UPDATE_PHONE_NUMBER, UserController::updatePhoneNumber);
 }
