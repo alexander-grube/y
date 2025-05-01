@@ -7,7 +7,7 @@ import cto.shadow.database.Database;
 import cto.shadow.data.UpdatePhoneNumberRequest;
 import cto.shadow.data.UserLogin;
 import cto.shadow.data.UserRegister;
-import cto.shadow.utils.JwtTokenGenerator;
+import cto.shadow.utils.JwtUtils;
 import io.undertow.server.HttpServerExchange;
 import org.jboss.logging.Logger;
 
@@ -147,7 +147,7 @@ public class UserController {
                     exchange.getResponseSender().send("Invalid username or password");
                     return;
                 }
-                final String jwt = JwtTokenGenerator.generateToken(id);
+                final String jwt = JwtUtils.generateToken(id);
                 try (PreparedStatement statement = connection.prepareStatement(
                         """
                                 UPDATE users SET failed_login_attempts = 0 WHERE id = ?
