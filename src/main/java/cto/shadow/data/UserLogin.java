@@ -1,4 +1,4 @@
-package cto.shadow.dtos;
+package cto.shadow.data;
 
 import com.alibaba.fastjson2.annotation.JSONCompiled;
 

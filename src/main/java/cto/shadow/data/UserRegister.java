@@ -1,35 +1,22 @@
-package cto.shadow.models;
+package cto.shadow.data;
+
+import com.alibaba.fastjson2.annotation.JSONCompiled;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.util.Set;
 
-public record User(
-        long id,
-        int failedLoginAttempts,
-        OffsetDateTime createdAt,
-        OffsetDateTime modifiedAt,
-        OffsetDateTime deletedAt,
-        OffsetDateTime lastLoginAt,
-        OffsetDateTime lockUntil,
+@JSONCompiled
+public record UserRegister(
         LocalDate dateOfBirth,
         String firstName,
         String lastName,
         String email,
         String phone,
         String username,
-        String password,
-        String createdBy,
-        String modifiedBy,
-        String deletedBy,
-        Set<Role> authorities
+        String password
 ) {
-    public User {
-        if (id < 0) {
-            throw new IllegalArgumentException("ID must be a positive number");
-        }
+    public UserRegister {
         if (dateOfBirth == null) {
-            throw new IllegalArgumentException("DateOfBirth cannot be null");
+            throw new IllegalArgumentException("DateOfBirth must be a positive number");
         }
         if (firstName == null || firstName.isBlank()) {
             throw new IllegalArgumentException("First name cannot be null or blank");
@@ -42,6 +29,9 @@ public record User(
         }
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("Username cannot be null or blank");
+        }
+        if (password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Password cannot be null or blank");
         }
     }
 }

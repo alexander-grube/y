@@ -1,5 +1,8 @@
-package cto.shadow.models;
+package cto.shadow.data;
 
+import com.alibaba.fastjson2.annotation.JSONCompiled;
+
+@JSONCompiled
 public record Role(
         long id,
         String authority

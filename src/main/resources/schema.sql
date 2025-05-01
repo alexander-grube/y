@@ -46,3 +46,13 @@ CREATE TABLE public.user_roles
     FOREIGN KEY (user_id) REFERENCES public.users (id) ON DELETE CASCADE,
     FOREIGN KEY (role_id) REFERENCES public.roles (id) ON DELETE CASCADE
 );
+
+CREATE TABLE follows (
+  follower_id BIGINT REFERENCES users(id),
+  followed_id BIGINT REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (follower_id, followed_id)
+);
+
+CREATE INDEX idx_follows_follower ON follows(follower_id);
+CREATE INDEX idx_follows_followed ON follows(followed_id);
