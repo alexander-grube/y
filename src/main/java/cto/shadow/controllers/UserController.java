@@ -3,10 +3,12 @@ package cto.shadow.controllers;
 import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.alibaba.fastjson2.JSON;
 import cto.shadow.config.Config;
+import cto.shadow.data.UpdatePasswordRequest;
 import cto.shadow.database.Database;
 import cto.shadow.data.UpdatePhoneNumberRequest;
 import cto.shadow.data.UserLogin;
 import cto.shadow.data.UserRegister;
+import cto.shadow.middleware.JwtAuthMiddleware;
 import cto.shadow.utils.JwtUtils;
 import io.undertow.server.HttpServerExchange;
 import org.jboss.logging.Logger;
@@ -193,7 +195,7 @@ public class UserController {
     }
 
     public static void updatePhoneNumber(HttpServerExchange exchange) {
-        final long id = Long.parseLong(exchange.getQueryParameters().get("id").getFirst());
+        final long id = Long.parseLong(exchange.getAttachment(JwtAuthMiddleware.CLAIMS_KEY).get("sub", String.class));
         exchange.getRequestReceiver().receiveFullBytes((request, bytes) -> {
             Connection connection = null;
             try {
@@ -235,6 +237,93 @@ public class UserController {
                 exchange.getResponseSender().send("Phone number updated successfully");
             } catch (Exception e) {
                 LOGGER.error("Error updating phone number", e);
+                if (connection != null) {
+                    try {
+                        connection.rollback(); // Rollback transaction on error
+                    } catch (SQLException rollbackEx) {
+                        LOGGER.error("Error rolling back transaction", rollbackEx);
+                    }
+                }
+                exchange.setStatusCode(500);
+                exchange.getResponseSender().send("Internal server error");
+            } finally {
+                if (connection != null) {
+                    try {
+                        connection.setAutoCommit(true); // Reset auto-commit mode
+                        connection.close();
+                    } catch (SQLException closeEx) {
+                        LOGGER.error("Error closing connection", closeEx);
+                    }
+                }
+            }
+        });
+    }
+
+    public static void updatePassword(HttpServerExchange exchange) {
+        final long id = Long.parseLong(exchange.getAttachment(JwtAuthMiddleware.CLAIMS_KEY).get("sub", String.class));
+        exchange.getRequestReceiver().receiveFullBytes((request, bytes) -> {
+            Connection connection = null;
+            try {
+                connection = Database.dataSource.getConnection();
+                connection.setAutoCommit(false); // Start transaction
+
+                UpdatePasswordRequest updatePasswordRequest;
+                try {
+                    updatePasswordRequest = JSON.parseObject(bytes, UpdatePasswordRequest.class);
+                } catch (Exception e) {
+                    LOGGER.error("Error parsing request body", e);
+                    exchange.setStatusCode(400);
+                    exchange.getResponseSender().send("Invalid request body " + e.getMessage());
+                    connection.rollback(); // Rollback transaction
+                    return;
+                }
+
+                String hashedNewPassword = BCrypt.withDefaults().hashToString(Config.BCRYPT_COST, updatePasswordRequest.newPassword().toCharArray());
+
+                try (PreparedStatement statement = connection.prepareStatement(
+                        """
+                                SELECT password FROM users WHERE id = ?
+                                """)) {
+                    statement.setLong(1, id);
+                    var resultSet = statement.executeQuery();
+                    if (!resultSet.next()) {
+                        exchange.setStatusCode(404);
+                        exchange.getResponseSender().send("User not found");
+                        connection.rollback(); // Rollback transaction
+                        return;
+                    }
+                    String hashedPassword = resultSet.getString(1);
+                    if (!BCrypt.verifyer().verify(updatePasswordRequest.oldPassword().toCharArray(), hashedPassword).verified) {
+                        exchange.setStatusCode(401);
+                        exchange.getResponseSender().send("Invalid old password");
+                        connection.rollback(); // Rollback transaction
+                        return;
+                    }
+                }
+                try (PreparedStatement statement = connection.prepareStatement(
+                        """
+                                UPDATE users SET password = ?, modified_at = ?, modified_by = ? WHERE id = ?
+                                """)) {
+                    OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+                    statement.setString(1, hashedNewPassword);
+                    statement.setObject(2, now);
+                    statement.setString(3, "system");
+                    statement.setLong(4, id);
+                    int rowsUpdated = statement.executeUpdate();
+                    if (rowsUpdated == 0) {
+                        exchange.setStatusCode(404);
+                        exchange.getResponseSender().send("User not found");
+                        connection.rollback(); // Rollback transaction
+                        return;
+                    }
+                }
+
+                connection.commit(); // Commit transaction if all operations succeed
+
+                exchange.setStatusCode(200);
+                exchange.getResponseSender().send("Password updated successfully");
+            } catch (Exception e) {
+                LOGGER.error("Error updating password", e);
                 if (connection != null) {
                     try {
                         connection.rollback(); // Rollback transaction on error

@@ -23,7 +23,8 @@ public class Server {
             .post(Routes.ECHO_JWT_CLAIMS, EchoController::echoJwtClaims)
             .post(Routes.USER_REGISTER, UserController::registerUser)
             .post(Routes.USER_LOGIN, UserController::loginUser)
-            .put(Routes.USER_UPDATE_PHONE_NUMBER, UserController::updatePhoneNumber);
+            .put(Routes.USER_UPDATE_PHONE_NUMBER, UserController::updatePhoneNumber)
+            .put(Routes.USER_UPDATE_PASSWORD, UserController::updatePassword);
 
     private static final HttpHandler HANDLER = new JwtAuthMiddleware(ROUTES);
 }

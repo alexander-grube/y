@@ -19,7 +19,9 @@ public class JwtAuthMiddleware implements HttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        if (exchange.getRequestPath().startsWith(Routes.HEALTH_CHECK)) {
+        if (exchange.getRequestPath().startsWith(Routes.HEALTH_CHECK)
+                || exchange.getRequestPath().startsWith(Routes.USER_REGISTER)
+                || exchange.getRequestPath().startsWith(Routes.USER_LOGIN)) {
             next.handleRequest(exchange);
             return;
         }
@@ -44,6 +46,7 @@ public class JwtAuthMiddleware implements HttpHandler {
             exchange.putAttachment(CLAIMS_KEY, claims);
             next.handleRequest(exchange);
         } catch (Exception e) {
+            e.printStackTrace();
             exchange.setStatusCode(401);
             exchange.getResponseSender().send("Unauthorized");
         } finally {
