@@ -2,6 +2,7 @@ package cto.shadow.server;
 
 import cto.shadow.config.Config;
 import cto.shadow.controllers.EchoController;
+import cto.shadow.controllers.FollowController;
 import cto.shadow.controllers.HealthController;
 import cto.shadow.controllers.UserController;
 import cto.shadow.middleware.JwtAuthMiddleware;
@@ -24,7 +25,9 @@ public class Server {
             .post(Routes.USER_REGISTER, UserController::registerUser)
             .post(Routes.USER_LOGIN, UserController::loginUser)
             .put(Routes.USER_UPDATE_PHONE_NUMBER, UserController::updatePhoneNumber)
-            .put(Routes.USER_UPDATE_PASSWORD, UserController::updatePassword);
+            .put(Routes.USER_UPDATE_PASSWORD, UserController::updatePassword)
+            .post(Routes.FOLLOW_USER, FollowController::followUser)
+            .post(Routes.UNFOLLOW_USER, FollowController::unfollowUser);
 
     private static final HttpHandler HANDLER = new JwtAuthMiddleware(ROUTES);
 }

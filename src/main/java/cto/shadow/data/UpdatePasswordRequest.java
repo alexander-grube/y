@@ -1,5 +1,8 @@
 package cto.shadow.data;
 
+import com.alibaba.fastjson2.annotation.JSONCompiled;
+
+@JSONCompiled
 public record UpdatePasswordRequest(
         String oldPassword,
         String newPassword

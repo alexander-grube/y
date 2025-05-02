@@ -1,13 +1,17 @@
 package cto.shadow.middleware;
 
+import cto.shadow.controllers.FollowController;
 import cto.shadow.routes.Routes;
 import cto.shadow.utils.JwtUtils;
 import io.jsonwebtoken.Claims;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import org.jboss.logging.Logger;
 
 public class JwtAuthMiddleware implements HttpHandler {
+    private static final Logger LOGGER = Logger.getLogger(JwtAuthMiddleware.class);
+
     private final HttpHandler next;
     private static final String AUTH_HEADER = "Authorization";
     private static final String AUTH_METHOD_PREFIX = "Bearer ";
@@ -46,7 +50,7 @@ public class JwtAuthMiddleware implements HttpHandler {
             exchange.putAttachment(CLAIMS_KEY, claims);
             next.handleRequest(exchange);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("JWT validation error", e);
             exchange.setStatusCode(401);
             exchange.getResponseSender().send("Unauthorized");
         } finally {
