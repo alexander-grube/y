@@ -19,8 +19,6 @@ import java.util.UUID;
 public class FileUploadController {
     private static final Logger LOGGER = Logger.getLogger(FileUploadController.class);
 
-    private static final ImageWriter WEBP_WRITER = ImageIO.getImageWritersByMIMEType("image/webp").next();
-
     public static void uploadImage(HttpServerExchange exchange) {
         exchange.getRequestReceiver().receiveFullBytes((request, bytes) -> {
             try {
@@ -33,13 +31,8 @@ public class FileUploadController {
                 }
 
                 final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                final byte[] imageBytes;
-                try (final ImageOutputStream outputStream = ImageIO.createImageOutputStream(byteArrayOutputStream)) {
-                    WEBP_WRITER.setOutput(outputStream);
-                    WEBP_WRITER.write(null, new IIOImage(bufferedImage, null, null), null);
-                    imageBytes = byteArrayOutputStream.toByteArray();
-                }
-                WEBP_WRITER.dispose();
+                ImageIO.write(bufferedImage, "webp", byteArrayOutputStream);
+                byte[] imageBytes = byteArrayOutputStream.toByteArray();
                 final String imageName = "image_" + UUID.randomUUID() + "_" + System.currentTimeMillis() + ".webp"; // Generate a unique name for the image
                 Database.minioClient.putObject(
                         PutObjectArgs.builder()
