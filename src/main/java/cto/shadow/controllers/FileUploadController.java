@@ -4,39 +4,49 @@ import cto.shadow.config.Config;
 import cto.shadow.database.Database;
 import io.minio.PutObjectArgs;
 import io.undertow.server.HttpServerExchange;
-import org.apache.commons.imaging.ImageFormats;
-import org.apache.commons.imaging.Imaging;
 import org.jboss.logging.Logger;
 
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.ByteArrayOutputStream;
 import java.util.UUID;
 
 public class FileUploadController {
     private static final Logger LOGGER = Logger.getLogger(FileUploadController.class);
 
-    private static final Map<String, Object> IMAGE_PARAMS = new HashMap<>();
-    private static final Map<String, Object> VIDEO_PARAMS = new HashMap<>();
-
-    static {
-        IMAGE_PARAMS.put("quality", 0.8);
-    }
-
+    private static final ImageWriter WEBP_WRITER = ImageIO.getImageWritersByMIMEType("image/webp").next();
 
     public static void uploadImage(HttpServerExchange exchange) {
         exchange.getRequestReceiver().receiveFullBytes((request, bytes) -> {
             try {
-                final BufferedImage bufferedImage = Imaging.getBufferedImage(bytes);
-                final byte[] imageBytes = Imaging.writeImageToBytes(bufferedImage, ImageFormats.PNG);
-                final String imageName = "image_" + UUID.randomUUID() + "_" + System.currentTimeMillis() + ".png"; // Generate a unique name for the image
+                final BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(bytes));
+                if (bufferedImage == null) {
+                    LOGGER.error("Failed to read image");
+                    exchange.setStatusCode(400);
+                    exchange.getResponseSender().send("Invalid image");
+                    return;
+                }
+
+                final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                final byte[] imageBytes;
+                try (final ImageOutputStream outputStream = ImageIO.createImageOutputStream(byteArrayOutputStream)) {
+                    WEBP_WRITER.setOutput(outputStream);
+                    WEBP_WRITER.write(null, new IIOImage(bufferedImage, null, null), null);
+                    imageBytes = byteArrayOutputStream.toByteArray();
+                }
+                WEBP_WRITER.dispose();
+                final String imageName = "image_" + UUID.randomUUID() + "_" + System.currentTimeMillis() + ".webp"; // Generate a unique name for the image
                 Database.minioClient.putObject(
                         PutObjectArgs.builder()
                                 .bucket(Config.MINIO_BUCKET_IMAGES)
                                 .object(imageName)
                                 .stream(new ByteArrayInputStream(imageBytes), imageBytes.length, -1)
-                                .contentType("image/jpeg")
+                                .contentType("image/webp")
                                 .build()
                 );
             } catch (Exception e) {
