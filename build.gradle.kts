@@ -24,6 +24,7 @@ dependencies {
     implementation("org.eclipse.collections:eclipse-collections-api:11.1.0")
     implementation("org.eclipse.collections:eclipse-collections:11.1.0")
     implementation("io.minio:minio:8.5.17")
+    implementation("org.apache.commons:commons-imaging:1.0.0-alpha6")
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
