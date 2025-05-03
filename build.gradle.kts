@@ -27,6 +27,7 @@ dependencies {
     implementation("com.github.jai-imageio:jai-imageio-core:1.4.0")
     implementation("com.github.jai-imageio:jai-imageio-jpeg2000:1.4.0")
     implementation("org.sejda.imageio:webp-imageio:0.1.6")
+    implementation("org.bytedeco:javacv-platform:1.5.11")
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
