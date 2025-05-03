@@ -58,34 +58,36 @@ public class FileUploadController {
         exchange.getRequestReceiver().receiveFullBytes((request, bytes) -> {
             final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
             final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(byteArrayInputStream);
-                 FFmpegFrameRecorder recorder = new FFmpegFrameRecorder(
-                         byteArrayOutputStream,
-                         grabber.getImageWidth(),
-                         grabber.getImageHeight(),
-                         grabber.getAudioChannels())) {
-                recorder.setFormat("webm");
-                recorder.setVideoCodec(avcodec.AV_CODEC_ID_VP9);
-                recorder.setAudioCodec(avcodec.AV_CODEC_ID_VORBIS);
-                recorder.setAudioChannels(grabber.getAudioChannels());
-
-                FFmpegLogCallback.set();
+            try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(byteArrayInputStream)) {
                 grabber.start();
-                recorder.start();
 
-                Frame frame;
-                while ((frame = grabber.grab()) != null) {
-                    recorder.record(frame);
+                try (FFmpegFrameRecorder recorder = new FFmpegFrameRecorder(
+                        byteArrayOutputStream,
+                        grabber.getImageWidth(),
+                        grabber.getImageHeight(),
+                        grabber.getAudioChannels())) {
+                    recorder.setFormat("webm");
+                    recorder.setVideoCodec(avcodec.AV_CODEC_ID_VP9);
+                    recorder.setAudioCodec(avcodec.AV_CODEC_ID_OPUS);
+                    recorder.setAudioChannels(grabber.getAudioChannels());
+                    recorder.setSampleRate(48000);
+
+                    recorder.start();
+
+                    Frame frame;
+                    while ((frame = grabber.grab()) != null) {
+                        recorder.record(frame);
+                    }
+                    String videoName = "video_" + UUID.randomUUID().toString() + "_" + System.currentTimeMillis() + ".webm"; // Generate a unique name for the video
+                    Database.minioClient.putObject(
+                            PutObjectArgs.builder()
+                                    .bucket(Config.MINIO_BUCKET_VIDEOS)
+                                    .object(videoName)
+                                    .stream(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()), byteArrayOutputStream.size(), -1)
+                                    .contentType("video/webm")
+                                    .build()
+                    );
                 }
-                String videoName = "video_" + UUID.randomUUID().toString() + "_" + System.currentTimeMillis() + ".webm"; // Generate a unique name for the video
-                Database.minioClient.putObject(
-                        PutObjectArgs.builder()
-                                .bucket(Config.MINIO_BUCKET_VIDEOS)
-                                .object(videoName)
-                                .stream(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()), byteArrayOutputStream.size(), -1)
-                                .contentType("video/webm")
-                                .build()
-                );
             } catch (Exception e) {
                 LOGGER.error("Error uploading video", e);
                 exchange.setStatusCode(500);
