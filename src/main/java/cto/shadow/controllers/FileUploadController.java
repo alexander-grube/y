@@ -6,11 +6,7 @@ import io.minio.PutObjectArgs;
 import io.undertow.server.HttpServerExchange;
 import org.jboss.logging.Logger;
 
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
