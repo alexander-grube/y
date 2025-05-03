@@ -23,4 +23,14 @@ public class Config {
     public static final long JWT_EXPIRATION_MILLIS = Long.parseLong(dotenv.get("JWT_EXPIRATION_MILLIS"));
 
     public static final String JWT_ISSUER = dotenv.get("JWT_ISSUER");
+
+    public static final String MINIO_ENDPOINT = dotenv.get("MINIO_ENDPOINT");
+
+    public static final String MINIO_ACCESS_KEY = dotenv.get("MINIO_ACCESS_KEY");
+
+    public static final String MINIO_SECRET_KEY = dotenv.get("MINIO_SECRET_KEY");
+
+    public static final String MINIO_BUCKET_IMAGES = dotenv.get("MINIO_BUCKET_IMAGES");
+
+    public static final String MINIO_BUCKET_VIDEOS = dotenv.get("MINIO_BUCKET_VIDEOS");
 }

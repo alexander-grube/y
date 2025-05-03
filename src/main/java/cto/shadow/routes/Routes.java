@@ -14,4 +14,7 @@ public class Routes {
 
     public static final String FOLLOW_USER = "/follow/{id}";
     public static final String UNFOLLOW_USER = "/unfollow/{id}";
+
+    public static final String UPLOAD_IMAGE = "/upload/image";
+    public static final String UPLOAD_VIDEO = "/upload/video";
 }
