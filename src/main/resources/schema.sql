@@ -56,3 +56,9 @@ CREATE TABLE follows (
 
 CREATE INDEX idx_follows_follower ON follows(follower_id);
 CREATE INDEX idx_follows_followed ON follows(followed_id);
+
+CREATE TABLE USER_IMAGES
+(
+    user_id BIGINT NOT NULL,
+    image_
+);
