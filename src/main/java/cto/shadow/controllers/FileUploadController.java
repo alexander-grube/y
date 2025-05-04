@@ -2,6 +2,7 @@ package cto.shadow.controllers;
 
 import cto.shadow.config.Config;
 import cto.shadow.database.Database;
+import io.github.mojtabaJ.cwebp.WebpConverter;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
@@ -13,11 +14,8 @@ import org.bytedeco.javacv.Frame;
 import org.jboss.logging.Logger;
 import org.bytedeco.ffmpeg.global.avcodec;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.Objects;
 import java.util.UUID;
 
 public class FileUploadController {
@@ -27,17 +25,7 @@ public class FileUploadController {
         exchange.getRequestReceiver().receiveFullBytes((request, bytes) -> {
             final String url;
             try {
-                final BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(bytes));
-                if (bufferedImage == null) {
-                    LOGGER.error("Failed to read image");
-                    exchange.setStatusCode(400);
-                    exchange.getResponseSender().send("Invalid image");
-                    return;
-                }
-
-                final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                ImageIO.write(bufferedImage, "webp", byteArrayOutputStream);
-                byte[] imageBytes = byteArrayOutputStream.toByteArray();
+                final byte[] imageBytes = WebpConverter.imageByteToWebpByte(bytes);
                 final String imageName = "image_" + UUID.randomUUID() + "_" + System.currentTimeMillis() + ".webp"; // Generate a unique name for the image
                 final ObjectWriteResponse writeResponse = Database.minioClient.putObject(
                         PutObjectArgs.builder()
