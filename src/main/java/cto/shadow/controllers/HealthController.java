@@ -13,9 +13,15 @@ public class HealthController {
     private static final Logger LOGGER = Logger.getLogger(HealthController.class);
 
     public static void checkHealth(HttpServerExchange exchange) throws Exception {
-        final Connection connection = Database.dataSource.getConnection();
-        if (connection == null) {
-            LOGGER.error("Database connection is null");
+        try (final Connection connection = Database.dataSource.getConnection()) {
+            if (connection == null || connection.isClosed()) {
+                LOGGER.error("Database connection is not available");
+                exchange.setStatusCode(500);
+                exchange.getResponseSender().send("Database connection is not available");
+                return;
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Error getting database connection", e);
             exchange.setStatusCode(500);
             exchange.getResponseSender().send("Database connection error");
             return;
