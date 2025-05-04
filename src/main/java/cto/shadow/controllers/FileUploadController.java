@@ -17,6 +17,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Objects;
 import java.util.UUID;
 
 public class FileUploadController {
@@ -67,16 +68,28 @@ public class FileUploadController {
     public static void uploadVideo(HttpServerExchange exchange) {
         exchange.getRequestReceiver().receiveFullBytes((request, bytes) -> {
             final String url;
-            final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-            final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(byteArrayInputStream)) {
+            ByteArrayInputStream byteArrayInputStream;
+            ByteArrayOutputStream byteArrayOutputStream;
+            FFmpegFrameGrabber grabber = null;
+            FFmpegFrameRecorder recorder = null;
+
+            String videoName = "video_" + UUID.randomUUID() + "_" + System.currentTimeMillis() + ".webm";
+
+            try {
+                byteArrayInputStream = new ByteArrayInputStream(bytes);
+                byteArrayOutputStream = new ByteArrayOutputStream();
+
+                grabber = new FFmpegFrameGrabber(byteArrayInputStream);
                 grabber.start();
 
-                try (FFmpegFrameRecorder recorder = new FFmpegFrameRecorder(
-                        byteArrayOutputStream,
-                        grabber.getImageWidth(),
-                        grabber.getImageHeight(),
-                        grabber.getAudioChannels())) {
+                byte[] videoBytes = bytes;
+                if (!Objects.equals(grabber.getFormat(), "webm")) {
+
+                    recorder = new FFmpegFrameRecorder(
+                            byteArrayOutputStream,
+                            grabber.getImageWidth(),
+                            grabber.getImageHeight(),
+                            grabber.getAudioChannels());
                     recorder.setFormat("webm");
                     recorder.setVideoCodec(avcodec.AV_CODEC_ID_VP9);
                     recorder.setAudioCodec(avcodec.AV_CODEC_ID_OPUS);
@@ -89,28 +102,46 @@ public class FileUploadController {
                     while ((frame = grabber.grab()) != null) {
                         recorder.record(frame);
                     }
-                    String videoName = "video_" + UUID.randomUUID().toString() + "_" + System.currentTimeMillis() + ".webm"; // Generate a unique name for the video
-                    final ObjectWriteResponse writeResponse = Database.minioClient.putObject(
-                            PutObjectArgs.builder()
-                                    .bucket(Config.MINIO_BUCKET_VIDEOS)
-                                    .object(videoName)
-                                    .stream(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()), byteArrayOutputStream.size(), -1)
-                                    .contentType("video/webm")
-                                    .build()
-                    );
-                    url = Database.minioClient.getPresignedObjectUrl(
-                            GetPresignedObjectUrlArgs.builder()
-                                    .object(writeResponse.object())
-                                    .bucket(Config.MINIO_BUCKET_VIDEOS)
-                                    .method(Method.GET)
-                                    .build()
-                    );
+
+                    // Explicitly flush to ensure all frames are written
+                    recorder.flush();
+                    recorder.stop();
+                    recorder.close();
+                    grabber.stop();
+                    grabber.close();
+                    videoBytes = byteArrayOutputStream.toByteArray();
+
                 }
+
+                final ObjectWriteResponse writeResponse = Database.minioClient.putObject(
+                        PutObjectArgs.builder()
+                                .bucket(Config.MINIO_BUCKET_VIDEOS)
+                                .object(videoName)
+                                .stream(new ByteArrayInputStream(videoBytes), videoBytes.length, -1)
+                                .contentType("video/webm")
+                                .build()
+                );
+
+                url = Database.minioClient.getPresignedObjectUrl(
+                        GetPresignedObjectUrlArgs.builder()
+                                .object(writeResponse.object())
+                                .bucket(Config.MINIO_BUCKET_VIDEOS)
+                                .method(Method.GET)
+                                .build()
+                );
             } catch (Exception e) {
                 LOGGER.error("Error uploading video", e);
                 exchange.setStatusCode(500);
                 exchange.getResponseSender().send("Internal server error");
                 return;
+            } finally {
+                // Ensure resources are closed
+                try {
+                    if (recorder != null) recorder.close();
+                    if (grabber != null) grabber.close();
+                } catch (Exception e) {
+                    LOGGER.error("Error closing resources", e);
+                }
             }
             exchange.setStatusCode(200);
             exchange.getResponseSender().send(url);

@@ -7,15 +7,18 @@ import cto.shadow.routes.Routes;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.RoutingHandler;
+import io.undertow.server.handlers.BlockingHandler;
 
 public class Server {
 
     public static Undertow bootstrapServer() {
         return Undertow.builder().addHttpListener(Config.PORT, Config.HOST, HANDLER)
+                .setIoThreads(10)
+                .setWorkerThreads(10)
                 .build();
     }
 
-    private static final HttpHandler ROUTES = new RoutingHandler()
+    private static final HttpHandler ROUTES = new BlockingHandler(new RoutingHandler()
             .get(Routes.HEALTH_CHECK, HealthController::checkHealth)
             .post(Routes.ECHO, EchoController::echo)
             .post(Routes.ECHO_JWT_CLAIMS, EchoController::echoJwtClaims)
@@ -26,7 +29,7 @@ public class Server {
             .post(Routes.FOLLOW_USER, FollowController::followUser)
             .post(Routes.UNFOLLOW_USER, FollowController::unfollowUser)
             .post(Routes.UPLOAD_IMAGE, FileUploadController::uploadImage)
-            .post(Routes.UPLOAD_VIDEO, FileUploadController::uploadVideo);
+            .post(Routes.UPLOAD_VIDEO, FileUploadController::uploadVideo));
 
     private static final HttpHandler HANDLER = new JwtAuthMiddleware(ROUTES);
 }
