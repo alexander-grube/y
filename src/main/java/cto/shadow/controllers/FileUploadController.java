@@ -83,8 +83,7 @@ public class FileUploadController {
                 grabber.start();
 
                 byte[] videoBytes = bytes;
-                if (!Objects.equals(grabber.getFormat(), "webm")) {
-
+                if (grabber.getFormat() != null && !grabber.getFormat().contains("webm")) {
                     recorder = new FFmpegFrameRecorder(
                             byteArrayOutputStream,
                             grabber.getImageWidth(),
