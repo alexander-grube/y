@@ -1,6 +1,5 @@
 package cto.shadow.middleware;
 
-import cto.shadow.controllers.FollowController;
 import cto.shadow.routes.Routes;
 import cto.shadow.utils.JwtUtils;
 import io.jsonwebtoken.Claims;

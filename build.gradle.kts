@@ -17,7 +17,7 @@ repositories {
 dependencies {
     implementation("io.undertow:undertow-core:2.3.18.Final")
     implementation("com.alibaba.fastjson2:fastjson2:2.0.57")
-    implementation("org.postgresql:postgresql:42.7.5")
+    implementation("org.postgresql:postgresql:42.7.6")
     implementation("com.zaxxer:HikariCP:6.3.0")
     implementation("io.github.cdimascio:dotenv-java:3.2.0")
     implementation("at.favre.lib:bcrypt:0.10.2")
