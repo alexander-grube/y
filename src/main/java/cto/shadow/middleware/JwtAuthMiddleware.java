@@ -8,17 +8,12 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import org.jboss.logging.Logger;
 
-public class JwtAuthMiddleware implements HttpHandler {
+public record JwtAuthMiddleware(HttpHandler next) implements HttpHandler {
     private static final Logger LOGGER = Logger.getLogger(JwtAuthMiddleware.class);
 
-    private final HttpHandler next;
     private static final String AUTH_HEADER = "Authorization";
     private static final String AUTH_METHOD_PREFIX = "Bearer ";
     public static final AttachmentKey<Claims> CLAIMS_KEY = AttachmentKey.create(Claims.class);
-
-    public JwtAuthMiddleware(HttpHandler next) {
-        this.next = next;
-    }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
