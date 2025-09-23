@@ -17,4 +17,5 @@ public class Routes {
 
     public static final String UPLOAD_IMAGE = "/upload/image";
     public static final String UPLOAD_VIDEO = "/upload/video";
+    public static final String USER_MEDIA = "/user/media";
 }

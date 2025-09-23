@@ -60,5 +60,22 @@ CREATE INDEX idx_follows_followed ON follows(followed_id);
 CREATE TABLE USER_IMAGES
 (
     user_id BIGINT NOT NULL,
-    image_
+    image_url VARCHAR(2048) NOT NULL,
+    image_name VARCHAR(255) NOT NULL,
+    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, image_name),
+    FOREIGN KEY (user_id) REFERENCES public.users (id) ON DELETE CASCADE
 );
+
+CREATE TABLE USER_VIDEOS
+(
+    user_id BIGINT NOT NULL,
+    video_url VARCHAR(2048) NOT NULL,
+    video_name VARCHAR(255) NOT NULL,
+    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, video_name),
+    FOREIGN KEY (user_id) REFERENCES public.users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_user_images_user_id ON USER_IMAGES(user_id);
+CREATE INDEX idx_user_videos_user_id ON USER_VIDEOS(user_id);

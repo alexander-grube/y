@@ -28,7 +28,8 @@ public class Server {
             .post(Routes.FOLLOW_USER, FollowController::followUser)
             .post(Routes.UNFOLLOW_USER, FollowController::unfollowUser)
             .post(Routes.UPLOAD_IMAGE, FileUploadController::uploadImage)
-            .post(Routes.UPLOAD_VIDEO, FileUploadController::uploadVideo);
+            .post(Routes.UPLOAD_VIDEO, FileUploadController::uploadVideo)
+            .get(Routes.USER_MEDIA, FileUploadController::getUserMedia);
 
     private static final HttpHandler HANDLER = new JwtAuthMiddleware(ROUTES);
 }
