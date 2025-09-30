@@ -15,15 +15,15 @@ repositories {
 }
 
 dependencies {
-    implementation("io.undertow:undertow-core:2.3.18.Final")
-    implementation("com.alibaba.fastjson2:fastjson2:2.0.58")
-    implementation("org.postgresql:postgresql:42.7.7")
+    implementation("io.undertow:undertow-core:2.3.19.Final")
+    implementation("com.alibaba.fastjson2:fastjson2:2.0.59")
+    implementation("org.postgresql:postgresql:42.7.8")
     implementation("com.zaxxer:HikariCP:7.0.2")
     implementation("io.github.cdimascio:dotenv-java:3.2.0")
     implementation("at.favre.lib:bcrypt:0.10.2")
     implementation("org.eclipse.collections:eclipse-collections-api:13.0.0")
     implementation("org.eclipse.collections:eclipse-collections:13.0.0")
-    implementation("io.minio:minio:8.5.17")
+    implementation("io.minio:minio:8.6.0")
     implementation("io.github.mojtabaj:c-webp:1.0.2")
     implementation("org.bytedeco:javacv-platform:1.5.12")
     implementation("io.jsonwebtoken:jjwt-api:0.12.7")
