@@ -6,7 +6,7 @@ import org.jboss.logging.Logger;
 public class Main {
     private static final Logger LOGGER = Logger.getLogger(Main.class);
 
-    public static void main(String[] args) {
+    static void main() {
         LOGGER.info("Get Ready to be Shadowed!");
         Server.bootstrapServer().start();
     }
